@@ -1,0 +1,96 @@
+services:
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: toystore-openobserve
+    restart: unless-stopped
+    ports:
+      - "5080:5080"
+    environment:
+      ZO_ROOT_USER_EMAIL: ${OPENOBSERVE_USER:-admin@toystore.com}
+      ZO_ROOT_USER_PASSWORD: ${OPENOBSERVE_PASSWORD:-OpenObserve2026!}
+      ZO_ROOT_USER_PASS: ${OPENOBSERVE_PASSWORD:-OpenObserve2026!}
+      ZO_DATA_DIR: /data
+      ZO_HTTP_PORT: "5080"
+    volumes:
+      - openobserve_data:/data
+    mem_limit: 512m
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: toystore-otel-collector
+    user: "0:0"
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    environment:
+      OPENOBSERVE_OTLP_ENDPOINT: http://openobserve:5080/api/${OPENOBSERVE_ORG:-default}
+      OPENOBSERVE_BASIC_AUTH: ${OPENOBSERVE_BASIC_AUTH}
+      HOST_PROC: /hostfs/proc
+      HOST_SYS: /hostfs/sys
+      HOST_ETC: /hostfs/etc
+      HOST_VAR: /hostfs/var
+      HOST_RUN: /hostfs/run
+      HOST_DEV: /hostfs/dev
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - /:/hostfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - openobserve
+    mem_limit: 256m
+
+  thermal-exporter:
+    image: ${DOCKERHUB_USERNAME}/toystore-thermal:latest
+    container_name: toystore-thermal-exporter
+    restart: unless-stopped
+    environment:
+      HOSTFS_PATH: /hostfs
+      HOST_HOSTNAME: ${EC2_HOST:-aws-ec2-toystore}
+      OPENOBSERVE_URL: http://openobserve:5080
+      OPENOBSERVE_ORG: ${OPENOBSERVE_ORG:-default}
+      OPENOBSERVE_USER: ${OPENOBSERVE_USER:-admin@toystore.com}
+      OPENOBSERVE_PASSWORD: ${OPENOBSERVE_PASSWORD:-OpenObserve2026!}
+      COLLECTION_INTERVAL_SECONDS: "15"
+    volumes:
+      - /proc:/hostfs/proc:ro
+      - /sys:/hostfs/sys:ro
+    depends_on:
+      - openobserve
+    mem_limit: 64m
+
+  api:
+    image: ${DOCKERHUB_USERNAME}/toystore-api:latest
+    container_name: toystore-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "80"
+      DB_PATH: /app/data/toystore.db
+      BACKUP_DIR: /app/backups
+      JWT_KEY: ${JWT_KEY}
+      JWT_ISSUER: ToyStoreAPI
+      JWT_AUDIENCE: ToyStoreClient
+      JWT_EXPIRY_MINUTES: "60"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      CORS_ALLOWED_ORIGINS: http://${EC2_HOST:-localhost},https://${EC2_HOST:-localhost}
+    volumes:
+      - toystore_data:/app/data
+      - toystore_backups:/app/backups
+    depends_on:
+      - otel-collector
+    mem_limit: 256m
+
+  web:
+    image: ${DOCKERHUB_USERNAME}/toystore-web:latest
+    container_name: toystore-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    mem_limit: 128m
+
+volumes:
+  toystore_data:
+  toystore_backups:
+  openobserve_data:

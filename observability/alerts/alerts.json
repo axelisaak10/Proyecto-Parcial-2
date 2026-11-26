@@ -1,0 +1,89 @@
+[
+  {
+    "name": "Alerta_Fallo_Pipeline_CICD",
+    "stream_name": "cicd_pipeline",
+    "stream_type": "logs",
+    "is_real_time": false,
+    "enabled": true,
+    "query_condition": {
+      "type": "sql",
+      "conditions": [],
+      "sql": "SELECT COUNT(*) AS failed_runs FROM \"cicd_pipeline\" WHERE status = 'failed'",
+      "aggregation": null,
+      "vrl_function": null,
+      "multi_time_range": []
+    },
+    "trigger_condition": {
+      "period": 5,
+      "operator": ">=",
+      "threshold": 1,
+      "frequency": 1,
+      "cron": "",
+      "frequency_type": "minutes",
+      "silence": 5,
+      "timezone": "UTC",
+      "align_time": false
+    },
+    "context_attributes": {},
+    "folder_id": "default",
+    "description": "Se activa cuando GitHub Actions detecta un fallo en Playwright/Jest y bloquea el despliegue SSH en EC2."
+  },
+  {
+    "name": "Alerta_Errores_HTTP_5xx_API",
+    "stream_name": "default",
+    "stream_type": "logs",
+    "is_real_time": false,
+    "enabled": true,
+    "query_condition": {
+      "type": "sql",
+      "conditions": [],
+      "sql": "SELECT COUNT(*) AS server_errors FROM \"default\" WHERE severity = 'Error' OR statuscode >= 500",
+      "aggregation": null,
+      "vrl_function": null,
+      "multi_time_range": []
+    },
+    "trigger_condition": {
+      "period": 5,
+      "operator": ">=",
+      "threshold": 5,
+      "frequency": 1,
+      "cron": "",
+      "frequency_type": "minutes",
+      "silence": 10,
+      "timezone": "UTC",
+      "align_time": false
+    },
+    "context_attributes": {},
+    "folder_id": "default",
+    "description": "Se activa cuando ToyStore.API registra 5 o mas errores de servidor (5xx) o excepciones en una ventana de 5 minutos."
+  },
+  {
+    "name": "Alerta_Alto_Consumo_CPU_RAM_EC2",
+    "stream_name": "ec2_infrastructure",
+    "stream_type": "logs",
+    "is_real_time": false,
+    "enabled": true,
+    "query_condition": {
+      "type": "sql",
+      "conditions": [],
+      "sql": "SELECT COUNT(*) AS high_load FROM \"ec2_infrastructure\" WHERE cpu_percent > 80 OR memory_percent > 85",
+      "aggregation": null,
+      "vrl_function": null,
+      "multi_time_range": []
+    },
+    "trigger_condition": {
+      "period": 5,
+      "operator": ">=",
+      "threshold": 3,
+      "frequency": 1,
+      "cron": "",
+      "frequency_type": "minutes",
+      "silence": 15,
+      "timezone": "UTC",
+      "align_time": false
+    },
+    "context_attributes": {},
+    "folder_id": "default",
+    "description": "Se activa cuando la instancia AWS EC2 supera el 80% de CPU o el 85% de Memoria RAM."
+  }
+]

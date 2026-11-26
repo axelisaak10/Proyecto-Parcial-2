@@ -1,0 +1,376 @@
+{
+  "version": 5,
+  "title": "ToyStore - Infraestructura AWS EC2",
+  "description": "CPU, memoria RAM, ancho de banda, temperatura y carga de la instancia EC2 (thermal-exporter cada 15 s).",
+  "variables": {
+    "list": []
+  },
+  "defaultDatetimeDuration": {
+    "type": "relative",
+    "relativeTimePeriod": "6h",
+    "startTime": 0,
+    "endTime": 0
+  },
+  "tabs": [
+    {
+      "tabId": "infra",
+      "name": "Recursos EC2",
+      "panels": [
+        {
+          "id": "inf_cpu",
+          "type": "line",
+          "title": "CPU (%)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2,
+            "unit": "percent"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(cpu_percent) AS cpu_percent FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "CPU %",
+                    "alias": "cpu_percent",
+                    "column": "cpu_percent",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 8,
+            "i": 1
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "inf_ram",
+          "type": "line",
+          "title": "Memoria RAM (% y MB usados)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(memory_percent) AS memory_percent, AVG(memory_used_mb) AS memory_used_mb FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "RAM %",
+                    "alias": "memory_percent",
+                    "column": "memory_percent",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "RAM MB usados",
+                    "alias": "memory_used_mb",
+                    "column": "memory_used_mb",
+                    "color": "#16a34a",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 0,
+            "w": 24,
+            "h": 8,
+            "i": 2
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "inf_net",
+          "type": "line",
+          "title": "Ancho de banda RX/TX (KB/s)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(network_rx_kbps) AS rx_kbps, AVG(network_tx_kbps) AS tx_kbps FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Entrada RX",
+                    "alias": "rx_kbps",
+                    "column": "rx_kbps",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "Salida TX",
+                    "alias": "tx_kbps",
+                    "column": "tx_kbps",
+                    "color": "#16a34a",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 8,
+            "w": 24,
+            "h": 8,
+            "i": 3
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "inf_temp",
+          "type": "line",
+          "title": "Temperatura (°C)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(temperature_celsius) AS temperature_celsius FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Temperatura °C",
+                    "alias": "temperature_celsius",
+                    "column": "temperature_celsius",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 8,
+            "w": 24,
+            "h": 8,
+            "i": 4
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "inf_load",
+          "type": "line",
+          "title": "Load average (1m / 5m / 15m)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(load_1m) AS load_1m, AVG(load_5m) AS load_5m, AVG(load_15m) AS load_15m FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "1m",
+                    "alias": "load_1m",
+                    "column": "load_1m",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "5m",
+                    "alias": "load_5m",
+                    "column": "load_5m",
+                    "color": "#16a34a",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "15m",
+                    "alias": "load_15m",
+                    "column": "load_15m",
+                    "color": "#f97316",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 16,
+            "w": 48,
+            "h": 8,
+            "i": 5
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        }
+      ]
+    }
+  ]
+}

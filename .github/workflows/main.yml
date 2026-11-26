@@ -1,0 +1,433 @@
+name: ToyStore CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+
+env:
+  API_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/toystore-api
+  WEB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/toystore-web
+  THERMAL_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/toystore-thermal
+
+jobs:
+  # ==========================================================
+  # 1. Backend Tests (Express / Node 24 Jest + Security Audit)
+  # ==========================================================
+  backend-test:
+    name: Backend Test & Coverage (Express / Node 24)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+
+      - name: Security audit (High/Critical)
+        run: pnpm --dir backend audit --audit-level=high
+
+      - name: Build Express TypeScript backend
+        run: pnpm --dir backend run build
+
+      - name: Run Jest unit & integration tests with coverage
+        run: pnpm --dir backend run test:ci
+
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          if [ -f "backend/coverage/coverage-summary.json" ]; then
+            node -e '
+              const fs = require("fs");
+              const summary = JSON.parse(fs.readFileSync("backend/coverage/coverage-summary.json", "utf8")).total;
+              const md = [
+                "### Express Backend Coverage (Jest)",
+                "| Metric | Covered | Total | % |",
+                "| :--- | ---: | ---: | ---: |",
+                `| Lines | ${summary.lines.covered} | ${summary.lines.total} | ${summary.lines.pct}% |`,
+                `| Statements | ${summary.statements.covered} | ${summary.statements.total} | ${summary.statements.pct}% |`,
+                `| Functions | ${summary.functions.covered} | ${summary.functions.total} | ${summary.functions.pct}% |`,
+                `| Branches | ${summary.branches.covered} | ${summary.branches.total} | ${summary.branches.pct}% |`
+              ].join("\n");
+              fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + "\n");
+            '
+          fi
+
+  # ==========================================================
+  # 2. Frontend Security Audit, Jest Tests & Angular Build
+  # ==========================================================
+  frontend-test:
+    name: Frontend Jest & Angular Build (pnpm)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Security audit (High/Critical)
+        run: pnpm --dir frontend audit --audit-level=high
+
+      - name: Run Jest unit tests
+        run: pnpm --dir frontend run test:ci
+
+      - name: Build Angular production bundle
+        run: pnpm --dir frontend run build
+
+  # ==========================================================
+  # 3. End-to-End Tests with Playwright (Gating Gate for Deploy)
+  # ==========================================================
+  e2e-playwright:
+    name: Playwright E2E Suite (Full Stack)
+    needs: [backend-test, frontend-test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: e2e/pnpm-lock.yaml
+
+      - name: Build & start Docker Compose CI stack
+        run: |
+          docker compose -f docker-compose.ci.yml up -d --build
+          echo "Waiting for API & Nginx healthchecks..."
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/api/health >/dev/null && curl -fsS http://localhost:8080/ >/dev/null; then
+              echo "CI stack is healthy."
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f docker-compose.ci.yml logs
+          exit 1
+
+      - name: Install Playwright & Chromium
+        run: |
+          pnpm --dir e2e install --frozen-lockfile
+          pnpm --dir e2e exec playwright install --with-deps chromium
+
+      - name: Execute Playwright E2E suite
+        env:
+          E2E_BASE_URL: http://localhost:8080
+          E2E_CHECK_NGINX_HEADERS: 'true'
+          CI: 'true'
+        run: pnpm --dir e2e test
+
+      - name: Upload Playwright report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+
+      - name: Teardown CI stack
+        if: always()
+        run: docker compose -f docker-compose.ci.yml down -v
+
+  # ==========================================================
+  # 4. Transmit CI Test Results to OpenObserve (Always Runs)
+  # ==========================================================
+  report-ci-openobserve:
+    name: Report CI Execution to OpenObserve
+    needs: [backend-test, frontend-test, e2e-playwright]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send CI status payload to OpenObserve
+        env:
+          OPENOBSERVE_URL: ${{ secrets.OPENOBSERVE_URL }}
+          OPENOBSERVE_ORG: ${{ secrets.OPENOBSERVE_ORG }}
+          OPENOBSERVE_USER: ${{ secrets.OPENOBSERVE_USER }}
+          OPENOBSERVE_PASSWORD: ${{ secrets.OPENOBSERVE_PASSWORD }}
+          BACKEND_RESULT: ${{ needs.backend-test.result }}
+          FRONTEND_RESULT: ${{ needs.frontend-test.result }}
+          E2E_RESULT: ${{ needs.e2e-playwright.result }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if [ -z "$OPENOBSERVE_URL" ] || [ -z "$OPENOBSERVE_USER" ] || [ -z "$OPENOBSERVE_PASSWORD" ]; then
+            echo "::warning::OpenObserve secrets not configured. Skipping CI telemetry push."
+            exit 0
+          fi
+
+          ORG="${OPENOBSERVE_ORG:-default}"
+          if [ "$BACKEND_RESULT" = "success" ] && [ "$FRONTEND_RESULT" = "success" ] && [ "$E2E_RESULT" = "success" ]; then
+            OVERALL="success"
+            BLOCKED=false
+          else
+            OVERALL="failed"
+            BLOCKED=true
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg event_type "ci_test_result" \
+            --arg status "$OVERALL" \
+            --arg backend_tests "$BACKEND_RESULT" \
+            --arg frontend_tests "$FRONTEND_RESULT" \
+            --arg playwright_e2e "$E2E_RESULT" \
+            --argjson deploy_blocked "$BLOCKED" \
+            --arg commit_sha "${{ github.sha }}" \
+            --arg commit_message "$COMMIT_MSG" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '[{
+              event_type: $event_type,
+              status: $status,
+              backend_tests: $backend_tests,
+              frontend_tests: $frontend_tests,
+              playwright_e2e: $playwright_e2e,
+              deploy_blocked: $deploy_blocked,
+              commit_sha: $commit_sha,
+              commit_message: $commit_message,
+              branch: $branch,
+              actor: $actor,
+              run_id: $run_id,
+              run_url: $run_url,
+              timestamp: $timestamp
+            }]')
+
+          curl -fsS -X POST "${OPENOBSERVE_URL%/}/api/${ORG}/cicd_pipeline/_json" \
+            -u "${OPENOBSERVE_USER}:${OPENOBSERVE_PASSWORD}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+          echo "Recorded CI execution in OpenObserve (status=$OVERALL, deploy_blocked=$BLOCKED)"
+
+  # ==========================================================
+  # 5. Build & Push Docker Images (Only if ALL tests passed)
+  # ==========================================================
+  build-and-push:
+    name: Build & Push Docker Images
+    needs: [e2e-playwright]
+    if: github.event_name == 'push' && success()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+          tags: |
+            ${{ env.API_IMAGE }}:latest
+            ${{ env.API_IMAGE }}:${{ github.sha }}
+
+      - name: Build and push Web (Angular + Nginx) image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+          tags: |
+            ${{ env.WEB_IMAGE }}:latest
+            ${{ env.WEB_IMAGE }}:${{ github.sha }}
+
+      - name: Build and push Thermal/Infra Exporter image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./observability/thermal-exporter
+          file: ./observability/thermal-exporter/Dockerfile
+          push: true
+          cache-from: type=gha,scope=thermal
+          cache-to: type=gha,mode=max,scope=thermal
+          tags: |
+            ${{ env.THERMAL_IMAGE }}:latest
+            ${{ env.THERMAL_IMAGE }}:${{ github.sha }}
+
+  # ==========================================================
+  # 6. Conditional Continuous Deployment to AWS EC2 via SSH
+  # ==========================================================
+  deploy-ec2:
+    name: Deploy Stack to AWS EC2 (SSH)
+    needs: [build-and-push]
+    if: github.event_name == 'push' && success()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare /opt/toystore on AWS EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo mkdir -p /opt/toystore
+            sudo chown -R "$(whoami):$(whoami)" /opt/toystore
+
+      - name: Copy Compose & Observability configs to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml,observability"
+          target: "/opt/toystore"
+
+      - name: Pull images, restart containers & verify health on EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/toystore
+
+            O2_USER="${{ secrets.OPENOBSERVE_USER }}"
+            O2_PASS="${{ secrets.OPENOBSERVE_PASSWORD }}"
+            O2_ORG="${{ secrets.OPENOBSERVE_ORG }}"
+            if [ -z "$O2_ORG" ]; then O2_ORG="default"; fi
+            O2_BASIC=$(printf '%s:%s' "$O2_USER" "$O2_PASS" | base64 -w0)
+
+            printf '%s\n' \
+              "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" \
+              "JWT_KEY=${{ secrets.JWT_KEY }}" \
+              "EC2_HOST=${{ secrets.EC2_HOST }}" \
+              "OPENOBSERVE_ORG=${O2_ORG}" \
+              "OPENOBSERVE_USER=${O2_USER}" \
+              "OPENOBSERVE_PASSWORD=${O2_PASS}" \
+              "OPENOBSERVE_BASIC_AUTH=${O2_BASIC}" \
+              > .env
+            chmod 600 .env
+
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            docker compose -f docker-compose.prod.yml pull api web thermal-exporter
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "==> Waiting for production healthcheck (API, Web & OpenObserve)..."
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1/api/health >/dev/null && \
+                 curl -fsS http://127.0.0.1/ >/dev/null && \
+                 curl -fsS http://127.0.0.1:5080/healthz >/dev/null; then
+                echo "==> Production stack is healthy."
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                docker compose -f docker-compose.prod.yml logs --tail=50
+                exit 1
+              fi
+              sleep 2
+            done
+
+            docker image prune -f
+            docker compose -f docker-compose.prod.yml ps
+
+      - name: Record EC2 deployment event in OpenObserve
+        if: always()
+        env:
+          OPENOBSERVE_URL: ${{ secrets.OPENOBSERVE_URL }}
+          OPENOBSERVE_ORG: ${{ secrets.OPENOBSERVE_ORG }}
+          OPENOBSERVE_USER: ${{ secrets.OPENOBSERVE_USER }}
+          OPENOBSERVE_PASSWORD: ${{ secrets.OPENOBSERVE_PASSWORD }}
+          JOB_STATUS: ${{ job.status }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if [ -z "$OPENOBSERVE_URL" ] || [ -z "$OPENOBSERVE_USER" ] || [ -z "$OPENOBSERVE_PASSWORD" ]; then
+            echo "::warning::OpenObserve secrets not configured. Skipping CD telemetry push."
+            exit 0
+          fi
+
+          ORG="${OPENOBSERVE_ORG:-default}"
+          if [ "$JOB_STATUS" = "success" ]; then
+            STATUS="success"
+          else
+            STATUS="failed"
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg event_type "cd_deploy_result" \
+            --arg status "$STATUS" \
+            --arg target_host "${{ secrets.EC2_HOST }}" \
+            --argjson deploy_blocked false \
+            --arg commit_sha "${{ github.sha }}" \
+            --arg commit_message "$COMMIT_MSG" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '[{
+              event_type: $event_type,
+              status: $status,
+              target_host: $target_host,
+              deploy_blocked: $deploy_blocked,
+              commit_sha: $commit_sha,
+              commit_message: $commit_message,
+              branch: $branch,
+              actor: $actor,
+              run_id: $run_id,
+              run_url: $run_url,
+              timestamp: $timestamp
+            }]')
+
+          curl -fsS -X POST "${OPENOBSERVE_URL%/}/api/${ORG}/cicd_pipeline/_json" \
+            -u "${OPENOBSERVE_USER}:${OPENOBSERVE_PASSWORD}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"

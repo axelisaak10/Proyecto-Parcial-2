@@ -1,0 +1,1148 @@
+{
+  "version": 5,
+  "title": "ToyStore Parcial 2 - Tablero Unificado (CI/CD + App OTLP + EC2 Infra)",
+  "description": "Vista simultánea del pipeline CI/CD, trazas/logs/métricas OTLP de la API y recursos de la instancia AWS EC2.",
+  "variables": {
+    "list": []
+  },
+  "defaultDatetimeDuration": {
+    "type": "relative",
+    "relativeTimePeriod": "6h",
+    "startTime": 0,
+    "endTime": 0
+  },
+  "tabs": [
+    {
+      "tabId": "unificado",
+      "name": "Vista Unificada",
+      "panels": [
+        {
+          "id": "kpi_ci_failed",
+          "type": "metric",
+          "title": "Ejecuciones CI fallidas (deploy bloqueado)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT COUNT(*) AS fallidas FROM \"cicd_pipeline\" WHERE status = 'failed'",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [],
+                "y": [
+                  {
+                    "label": "Ejecuciones CI fallidas (deploy bloqueado)",
+                    "alias": "fallidas",
+                    "column": "fallidas",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 5,
+            "i": 1
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "kpi_deploys",
+          "type": "metric",
+          "title": "Despliegues exitosos en EC2",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT COUNT(*) AS despliegues FROM \"cicd_pipeline\" WHERE event_type = 'cd_deploy_result' AND status = 'success'",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [],
+                "y": [
+                  {
+                    "label": "Despliegues exitosos en EC2",
+                    "alias": "despliegues",
+                    "column": "despliegues",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 5,
+            "i": 2
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "kpi_cpu",
+          "type": "metric",
+          "title": "CPU promedio EC2 (%)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2,
+            "unit": "percent"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT AVG(cpu_percent) AS cpu FROM \"ec2_infrastructure\"",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [],
+                "y": [
+                  {
+                    "label": "CPU promedio EC2 (%)",
+                    "alias": "cpu",
+                    "column": "cpu",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 0,
+            "w": 12,
+            "h": 5,
+            "i": 3
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "kpi_ram",
+          "type": "metric",
+          "title": "RAM promedio EC2 (%)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2,
+            "unit": "percent"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT AVG(memory_percent) AS ram FROM \"ec2_infrastructure\"",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [],
+                "y": [
+                  {
+                    "label": "RAM promedio EC2 (%)",
+                    "alias": "ram",
+                    "column": "ram",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 36,
+            "y": 0,
+            "w": 12,
+            "h": 5,
+            "i": 4
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_cicd",
+          "type": "table",
+          "title": "Registros de ejecución del Pipeline CI/CD (GitHub Actions)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp, event_type, status, deploy_blocked, backend_tests, frontend_tests, playwright_e2e, branch, actor, commit_sha, commit_message, run_url FROM \"cicd_pipeline\" ORDER BY _timestamp DESC LIMIT 50",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "_timestamp",
+                    "alias": "_timestamp",
+                    "column": "_timestamp",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "event_type",
+                    "alias": "event_type",
+                    "column": "event_type",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "status",
+                    "alias": "status",
+                    "column": "status",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "deploy_blocked",
+                    "alias": "deploy_blocked",
+                    "column": "deploy_blocked",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "backend_tests",
+                    "alias": "backend_tests",
+                    "column": "backend_tests",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "frontend_tests",
+                    "alias": "frontend_tests",
+                    "column": "frontend_tests",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "playwright_e2e",
+                    "alias": "playwright_e2e",
+                    "column": "playwright_e2e",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "branch",
+                    "alias": "branch",
+                    "column": "branch",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "actor",
+                    "alias": "actor",
+                    "column": "actor",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "commit_sha",
+                    "alias": "commit_sha",
+                    "column": "commit_sha",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "commit_message",
+                    "alias": "commit_message",
+                    "column": "commit_message",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "run_url",
+                    "alias": "run_url",
+                    "column": "run_url",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 5,
+            "w": 48,
+            "h": 9,
+            "i": 5
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_traces",
+          "type": "table",
+          "title": "Trazas distribuidas de peticiones HTTP y consultas SQLite (OTLP)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp, trace_id, span_id, service_name, operation_name, span_kind, duration, http_route, http_response_status_code, db_system, db_statement, span_status FROM \"default\" ORDER BY _timestamp DESC LIMIT 50",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "traces",
+                "x": [
+                  {
+                    "label": "_timestamp",
+                    "alias": "_timestamp",
+                    "column": "_timestamp",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "trace_id",
+                    "alias": "trace_id",
+                    "column": "trace_id",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "span_id",
+                    "alias": "span_id",
+                    "column": "span_id",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "service_name",
+                    "alias": "service_name",
+                    "column": "service_name",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "operation_name",
+                    "alias": "operation_name",
+                    "column": "operation_name",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "span_kind",
+                    "alias": "span_kind",
+                    "column": "span_kind",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "duration",
+                    "alias": "duration",
+                    "column": "duration",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "http_route",
+                    "alias": "http_route",
+                    "column": "http_route",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "http_response_status_code",
+                    "alias": "http_response_status_code",
+                    "column": "http_response_status_code",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "db_system",
+                    "alias": "db_system",
+                    "column": "db_system",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "db_statement",
+                    "alias": "db_statement",
+                    "column": "db_statement",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "span_status",
+                    "alias": "span_status",
+                    "column": "span_status",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 14,
+            "w": 48,
+            "h": 9,
+            "i": 6
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_cpu",
+          "type": "line",
+          "title": "EC2 – Consumo de CPU (%)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2,
+            "unit": "percent"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(cpu_percent) AS cpu_percent FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "CPU %",
+                    "alias": "cpu_percent",
+                    "column": "cpu_percent",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 23,
+            "w": 24,
+            "h": 8,
+            "i": 7
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_ram",
+          "type": "line",
+          "title": "EC2 – Memoria RAM (%)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2,
+            "unit": "percent"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(memory_percent) AS memory_percent, AVG(memory_used_mb) AS memory_used_mb FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "RAM %",
+                    "alias": "memory_percent",
+                    "column": "memory_percent",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 23,
+            "w": 24,
+            "h": 8,
+            "i": 8
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_net",
+          "type": "line",
+          "title": "EC2 – Ancho de banda (KB/s)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(network_rx_kbps) AS rx_kbps, AVG(network_tx_kbps) AS tx_kbps FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Entrada RX",
+                    "alias": "rx_kbps",
+                    "column": "rx_kbps",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "Salida TX",
+                    "alias": "tx_kbps",
+                    "column": "tx_kbps",
+                    "color": "#16a34a",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 31,
+            "w": 24,
+            "h": 8,
+            "i": 9
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_temp",
+          "type": "line",
+          "title": "EC2 – Temperatura (°C)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(temperature_celsius) AS temperature_celsius FROM \"ec2_infrastructure\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "ec2_infrastructure",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Temperatura °C",
+                    "alias": "temperature_celsius",
+                    "column": "temperature_celsius",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 31,
+            "w": 24,
+            "h": 8,
+            "i": 10
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_rps",
+          "type": "line",
+          "title": "Peticiones por segundo por endpoint y statusCode",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "sum(rate(toystore_http_requests_total[5m])) by (endpoint, statuscode)",
+              "customQuery": true,
+              "fields": {
+                "stream": "toystore_http_requests_total",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "{endpoint} [{statuscode}]",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 39,
+            "w": 16,
+            "h": 8,
+            "i": 11
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_p95",
+          "type": "line",
+          "title": "Latencia P95 por endpoint (ms)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "histogram_quantile(0.95, sum(rate(toystore_http_request_duration_ms_bucket[5m])) by (le, endpoint))",
+              "customQuery": true,
+              "fields": {
+                "stream": "toystore_http_request_duration_ms_bucket",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "{endpoint}",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 16,
+            "y": 39,
+            "w": 16,
+            "h": 8,
+            "i": 12
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_err",
+          "type": "line",
+          "title": "Tasa de errores HTTP (4xx/5xx) por endpoint",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "sum(rate(toystore_http_errors_total[5m])) by (endpoint, statuscode)",
+              "customQuery": true,
+              "fields": {
+                "stream": "toystore_http_errors_total",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "{endpoint} [{statuscode}]",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 32,
+            "y": 39,
+            "w": 16,
+            "h": 8,
+            "i": 13
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_logs",
+          "type": "table",
+          "title": "Logs estructurados de operación y excepciones (OTLP)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp, severity, method, endpoint, statuscode, durationms, userid, trace_id, body FROM \"default\" ORDER BY _timestamp DESC LIMIT 50",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "_timestamp",
+                    "alias": "_timestamp",
+                    "column": "_timestamp",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "severity",
+                    "alias": "severity",
+                    "column": "severity",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "method",
+                    "alias": "method",
+                    "column": "method",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "endpoint",
+                    "alias": "endpoint",
+                    "column": "endpoint",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "statuscode",
+                    "alias": "statuscode",
+                    "column": "statuscode",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "durationms",
+                    "alias": "durationms",
+                    "column": "durationms",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "userid",
+                    "alias": "userid",
+                    "column": "userid",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "trace_id",
+                    "alias": "trace_id",
+                    "column": "trace_id",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "body",
+                    "alias": "body",
+                    "column": "body",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 47,
+            "w": 48,
+            "h": 9,
+            "i": 14
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "u_alerts",
+          "type": "table",
+          "title": "Alertas operativas disparadas",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp, alert_name, stream, threshold, value, triggered_at, description FROM \"alert_events\" ORDER BY _timestamp DESC LIMIT 30",
+              "customQuery": true,
+              "fields": {
+                "stream": "alert_events",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "_timestamp",
+                    "alias": "_timestamp",
+                    "column": "_timestamp",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "alert_name",
+                    "alias": "alert_name",
+                    "column": "alert_name",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "stream",
+                    "alias": "stream",
+                    "column": "stream",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "threshold",
+                    "alias": "threshold",
+                    "column": "threshold",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "value",
+                    "alias": "value",
+                    "column": "value",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "triggered_at",
+                    "alias": "triggered_at",
+                    "column": "triggered_at",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "description",
+                    "alias": "description",
+                    "column": "description",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 56,
+            "w": 48,
+            "h": 7,
+            "i": 15
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        }
+      ]
+    }
+  ]
+}

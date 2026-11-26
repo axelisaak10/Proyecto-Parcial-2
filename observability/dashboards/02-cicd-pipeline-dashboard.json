@@ -1,0 +1,293 @@
+{
+  "version": 5,
+  "title": "ToyStore - Trazabilidad Pipeline CI/CD",
+  "description": "Resultados de pruebas (Jest, Playwright) y eventos de despliegue en EC2 enviados por GitHub Actions.",
+  "variables": {
+    "list": []
+  },
+  "defaultDatetimeDuration": {
+    "type": "relative",
+    "relativeTimePeriod": "7d",
+    "startTime": 0,
+    "endTime": 0
+  },
+  "tabs": [
+    {
+      "tabId": "cicd",
+      "name": "Pipeline",
+      "panels": [
+        {
+          "id": "ci_by_status",
+          "type": "bar",
+          "title": "Ejecuciones por evento y estado",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT event_type, status, COUNT(*) AS total FROM \"cicd_pipeline\" GROUP BY event_type, status",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Evento",
+                    "alias": "event_type",
+                    "column": "event_type",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "Estado",
+                    "alias": "status",
+                    "column": "status",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Total",
+                    "alias": "total",
+                    "column": "total",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 8,
+            "i": 1
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "ci_timeline",
+          "type": "line",
+          "title": "Línea de tiempo de ejecuciones",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, COUNT(*) AS ejecuciones FROM \"cicd_pipeline\" GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Ejecuciones",
+                    "alias": "ejecuciones",
+                    "column": "ejecuciones",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 0,
+            "w": 24,
+            "h": 8,
+            "i": 2
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "ci_table",
+          "type": "table",
+          "title": "Historial detallado de commits, pruebas y despliegues",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp, event_type, status, deploy_blocked, backend_tests, frontend_tests, playwright_e2e, branch, actor, commit_sha, commit_message, run_url FROM \"cicd_pipeline\" ORDER BY _timestamp DESC LIMIT 50",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "_timestamp",
+                    "alias": "_timestamp",
+                    "column": "_timestamp",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "event_type",
+                    "alias": "event_type",
+                    "column": "event_type",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "status",
+                    "alias": "status",
+                    "column": "status",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "deploy_blocked",
+                    "alias": "deploy_blocked",
+                    "column": "deploy_blocked",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "backend_tests",
+                    "alias": "backend_tests",
+                    "column": "backend_tests",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "frontend_tests",
+                    "alias": "frontend_tests",
+                    "column": "frontend_tests",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "playwright_e2e",
+                    "alias": "playwright_e2e",
+                    "column": "playwright_e2e",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "branch",
+                    "alias": "branch",
+                    "column": "branch",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "actor",
+                    "alias": "actor",
+                    "column": "actor",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "commit_sha",
+                    "alias": "commit_sha",
+                    "column": "commit_sha",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "commit_message",
+                    "alias": "commit_message",
+                    "column": "commit_message",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "run_url",
+                    "alias": "run_url",
+                    "column": "run_url",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 8,
+            "w": 48,
+            "h": 12,
+            "i": 3
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        }
+      ]
+    }
+  ]
+}

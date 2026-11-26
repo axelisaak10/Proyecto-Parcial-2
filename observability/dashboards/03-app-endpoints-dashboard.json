@@ -1,0 +1,481 @@
+{
+  "version": 5,
+  "title": "ToyStore - Observabilidad de Aplicación (OTLP)",
+  "description": "Métricas (latencia, peticiones/s, errores por endpoint), trazas distribuidas y logs de ToyStore.API.",
+  "variables": {
+    "list": []
+  },
+  "defaultDatetimeDuration": {
+    "type": "relative",
+    "relativeTimePeriod": "6h",
+    "startTime": 0,
+    "endTime": 0
+  },
+  "tabs": [
+    {
+      "tabId": "app",
+      "name": "Endpoints",
+      "panels": [
+        {
+          "id": "app_rps",
+          "type": "line",
+          "title": "Volumen de peticiones por segundo (endpoint, statusCode)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "sum(rate(toystore_http_requests_total[5m])) by (endpoint, statuscode)",
+              "customQuery": true,
+              "fields": {
+                "stream": "toystore_http_requests_total",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "{endpoint} [{statuscode}]",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 8,
+            "i": 1
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "app_p95",
+          "type": "line",
+          "title": "Latencia P95 por endpoint (ms)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "histogram_quantile(0.95, sum(rate(toystore_http_request_duration_ms_bucket[5m])) by (le, endpoint))",
+              "customQuery": true,
+              "fields": {
+                "stream": "toystore_http_request_duration_ms_bucket",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "{endpoint}",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 0,
+            "w": 24,
+            "h": 8,
+            "i": 2
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "app_err",
+          "type": "line",
+          "title": "Tasa de errores HTTP (4xx/5xx)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "sum(rate(toystore_http_errors_total[5m])) by (endpoint, statuscode)",
+              "customQuery": true,
+              "fields": {
+                "stream": "toystore_http_errors_total",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "{endpoint} [{statuscode}]",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 8,
+            "w": 24,
+            "h": 8,
+            "i": 3
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "app_latency_traces",
+          "type": "line",
+          "title": "Duración media de spans por ruta (ms, desde trazas)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS ts, AVG(duration) / 1000 AS avg_ms FROM \"default\" WHERE span_kind = '2' GROUP BY ts ORDER BY ts",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "traces",
+                "x": [
+                  {
+                    "label": "Tiempo",
+                    "alias": "ts",
+                    "column": "ts",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Latencia media ms",
+                    "alias": "avg_ms",
+                    "column": "avg_ms",
+                    "color": "#ea580c",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 8,
+            "w": 24,
+            "h": 8,
+            "i": 4
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "app_traces",
+          "type": "table",
+          "title": "Trazas distribuidas (API → Servicio → EF Core SQLite)",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp, trace_id, span_id, service_name, operation_name, span_kind, duration, http_route, http_response_status_code, db_system, db_statement, span_status FROM \"default\" ORDER BY _timestamp DESC LIMIT 50",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "traces",
+                "x": [
+                  {
+                    "label": "_timestamp",
+                    "alias": "_timestamp",
+                    "column": "_timestamp",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "trace_id",
+                    "alias": "trace_id",
+                    "column": "trace_id",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "span_id",
+                    "alias": "span_id",
+                    "column": "span_id",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "service_name",
+                    "alias": "service_name",
+                    "column": "service_name",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "operation_name",
+                    "alias": "operation_name",
+                    "column": "operation_name",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "span_kind",
+                    "alias": "span_kind",
+                    "column": "span_kind",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "duration",
+                    "alias": "duration",
+                    "column": "duration",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "http_route",
+                    "alias": "http_route",
+                    "column": "http_route",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "http_response_status_code",
+                    "alias": "http_response_status_code",
+                    "column": "http_response_status_code",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "db_system",
+                    "alias": "db_system",
+                    "column": "db_system",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "db_statement",
+                    "alias": "db_statement",
+                    "column": "db_statement",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "span_status",
+                    "alias": "span_status",
+                    "column": "span_status",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 16,
+            "w": 48,
+            "h": 10,
+            "i": 5
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        },
+        {
+          "id": "app_logs",
+          "type": "table",
+          "title": "Logs estructurados y excepciones",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": null,
+            "decimals": 2
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp, severity, method, endpoint, statuscode, durationms, userid, trace_id, body FROM \"default\" ORDER BY _timestamp DESC LIMIT 50",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "_timestamp",
+                    "alias": "_timestamp",
+                    "column": "_timestamp",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "severity",
+                    "alias": "severity",
+                    "column": "severity",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "method",
+                    "alias": "method",
+                    "column": "method",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "endpoint",
+                    "alias": "endpoint",
+                    "column": "endpoint",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "statuscode",
+                    "alias": "statuscode",
+                    "column": "statuscode",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "durationms",
+                    "alias": "durationms",
+                    "column": "durationms",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "userid",
+                    "alias": "userid",
+                    "column": "userid",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "trace_id",
+                    "alias": "trace_id",
+                    "column": "trace_id",
+                    "color": null,
+                    "isDerived": false
+                  },
+                  {
+                    "label": "body",
+                    "alias": "body",
+                    "column": "body",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 26,
+            "w": 48,
+            "h": 10,
+            "i": 6
+          },
+          "htmlContent": "",
+          "markdownContent": ""
+        }
+      ]
+    }
+  ]
+}

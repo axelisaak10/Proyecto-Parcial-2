@@ -1,0 +1,80 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  host_metrics:
+    root_path: /hostfs
+    collection_interval: 15s
+    scrapers:
+      cpu: {}
+      memory: {}
+      network: {}
+      load: {}
+      disk: {}
+      filesystem:
+        exclude_fs_types:
+          fs_types:
+            - autofs
+            - binfmt_misc
+            - bpf
+            - cgroup2
+            - configfs
+            - debugfs
+            - devpts
+            - devtmpfs
+            - fusectl
+            - hugetlbfs
+            - iso9660
+            - mqueue
+            - nsfs
+            - overlay
+            - proc
+            - procfs
+            - pstore
+            - rpc_pipefs
+            - securityfs
+            - selinuxfs
+            - squashfs
+            - sysfs
+            - tracefs
+          match_type: strict
+
+  docker_stats:
+    endpoint: "unix:///var/run/docker.sock"
+    collection_interval: 15s
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 256
+    spike_limit_mib: 64
+
+  batch:
+    send_batch_size: 1024
+    timeout: 5s
+
+exporters:
+  otlp_http/openobserve:
+    endpoint: "${env:OPENOBSERVE_OTLP_ENDPOINT}"
+    headers:
+      Authorization: "Basic ${env:OPENOBSERVE_BASIC_AUTH}"
+      stream-name: "default"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/openobserve]
+    metrics:
+      receivers: [otlp, host_metrics, docker_stats]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/openobserve]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/openobserve]
