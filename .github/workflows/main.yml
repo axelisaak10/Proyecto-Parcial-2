@@ -232,12 +232,20 @@ jobs:
               timestamp: $timestamp
             }]')
 
-          curl -fsS -X POST "${OPENOBSERVE_URL%/}/api/${ORG}/cicd_pipeline/_json" \
+          if curl -fsS \
+            --connect-timeout 10 \
+            --max-time 20 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            -X POST "${OPENOBSERVE_URL%/}/api/${ORG}/cicd_pipeline/_json" \
             -u "${OPENOBSERVE_USER}:${OPENOBSERVE_PASSWORD}" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD"
-
-          echo "Recorded CI execution in OpenObserve (status=$OVERALL, deploy_blocked=$BLOCKED)"
+            -d "$PAYLOAD"; then
+            echo "Recorded CI execution in OpenObserve (status=$OVERALL, deploy_blocked=$BLOCKED)"
+          else
+            echo "::warning::Could not reach OpenObserve at ${OPENOBSERVE_URL}; skipping CI telemetry push so cold-start deploys are not marked failed."
+          fi
 
   # ==========================================================
   # 5. Build & Push Docker Images (Only if ALL tests passed)
@@ -376,6 +384,10 @@ jobs:
               sleep 2
             done
 
+            set -a && source /opt/toystore/.env && set +a
+            OPENOBSERVE_URL="http://127.0.0.1:5080" bash /opt/toystore/observability/scripts/provision-openobserve.sh || \
+              echo "::warning::OpenObserve provisioning skipped"
+
             docker image prune -f
             docker compose -f docker-compose.prod.yml ps
 
@@ -427,7 +439,13 @@ jobs:
               timestamp: $timestamp
             }]')
 
-          curl -fsS -X POST "${OPENOBSERVE_URL%/}/api/${ORG}/cicd_pipeline/_json" \
+          curl -fsS \
+            --connect-timeout 10 \
+            --max-time 20 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            -X POST "${OPENOBSERVE_URL%/}/api/${ORG}/cicd_pipeline/_json" \
             -u "${OPENOBSERVE_USER}:${OPENOBSERVE_PASSWORD}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
