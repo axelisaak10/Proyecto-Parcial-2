@@ -15,10 +15,10 @@ e2e/test-results/
 *.db
 *.db-shm
 *.db-wal
-data/
-backups/
-backend/data/
-backend/backups/
+/data/
+/backups/
+/backend/data/
+/backend/backups/
 
 # Logs & OS / Editor artifacts
 *.log
